@@ -29,19 +29,33 @@ const uint8_t SamplingDelayMs[6] PROGMEM = {
 
 BaroSensorClass BaroSensor;
 
+// Temporary hack due to bug in Arduino 1.5.0-1.5.6 on ARM (see below)
+inline static int8_t _endTransmission(bool stop = true)
+{
+  int8_t res = Wire.endTransmission(stop);
+#ifdef __AVR__
+  return res;
+#else
+  // ARM Arduino <= 1.5.6 doesn't return an error code from endTransmission(),
+  // instead number of bytes is returned (regardless of error status or not.)
+  // This is corrected in https://github.com/arduino/Arduino/pull/1994 but not yet released.
+  return 0;
+#endif
+}
+
 void BaroSensorClass::begin()
 {
   Wire.begin();
   Wire.beginTransmission(BARO_ADDR);
   Wire.write(CMD_RESET);
-  err = Wire.endTransmission();
+  err = _endTransmission();
   if(err) return;
 
   uint16_t prom[7];
   for(int i = 0; i < 7; i++) {
     Wire.beginTransmission(BARO_ADDR);
     Wire.write(CMD_PROM_READ(i));
-    err = Wire.endTransmission(false);
+    err = _endTransmission(false);
     if(err)
       return;
     if(Wire.requestFrom(BARO_ADDR, 2) != 2) {
@@ -52,7 +66,7 @@ void BaroSensorClass::begin()
     prom[i] |= Wire.read();
   }
 
-  // TODO: verify CRC4 stored in high nibble of prom[0]
+  // TODO verify CRC4 in top 4 bits of prom[0] (follows AN520 but not directly...)
 
   c1 = prom[1];
   c2 = prom[2];
@@ -114,7 +128,8 @@ uint32_t BaroSensorClass::takeReading(uint8_t trigger_cmd, BaroOversampleLevel o
 {
   Wire.beginTransmission(BARO_ADDR);
   Wire.write(trigger_cmd);
-  err = Wire.endTransmission();
+  err = _endTransmission();
+
   if(err)
     return 0;
   uint8_t sampling_delay = pgm_read_byte(SamplingDelayMs + (int)oversample_level);
@@ -122,7 +137,7 @@ uint32_t BaroSensorClass::takeReading(uint8_t trigger_cmd, BaroOversampleLevel o
 
   Wire.beginTransmission(BARO_ADDR);
   Wire.write(CMD_READ_ADC);
-  err = Wire.endTransmission(false);
+  err = _endTransmission(false);
   if(err)
     return 0;
   if(Wire.requestFrom(BARO_ADDR, 3) != 3) {

@@ -7,6 +7,10 @@ For help downloading and installing this Library, see our guide [How to Install 
 For a simple example sketch that prints the temperature and pressure, launch Arduino IDE and choose File -> Examples -> BaroSensor -> SimpleBaro.
 
 
+# Known Issues
+
+* When using Arduino Due or compatible under Arduino 1.5, up to and including version 1.5.6, the Wire library does not return error codes for bad i2c communications. This is not a problem on other AVR-based Arduinos. On the Due platform you should check responses to make sure they're within expected ranges. We expect this bug to be fixed in the next Arduino 1.5 beta release after 1.5.6.
+
 # All Available Functions
 
 ## begin()
