@@ -104,11 +104,22 @@ bool BaroSensorClass::getTempAndPressure(float *temperature, float *pressure, Te
   uint32_t d2 = takeReading(CMD_START_D2(level), level);
   if(d2 == 0)
     return false;
-  int32_t dt = d2 - c5 * (1L<<8);
+  int64_t dt = d2 - c5 * (1L<<8);
+
+  int32_t temp = 2000 + dt * c6 / (1L<<23);
+
+  /* Second order temperature compensation */
+  int64_t t2;
+  if(temp >= 2000) {
+    /* High temperature */
+    t2 = 5 * (dt * dt) / (1LL<<38);
+  } else {
+      /* Low temperature */
+    t2 = 3 * (dt * dt) / (1LL<<33);
+  }
 
   if(temperature != NULL) {
-    int32_t temp = 2000 + (int64_t)dt * c6 / (1L<<23);
-    *temperature = (float)temp / 100;
+    *temperature = (float)(temp - t2) / 100;
     if(tempScale == FAHRENHEIT)
       *temperature = *temperature * 9 / 5 + 32;
   }
@@ -118,8 +129,27 @@ bool BaroSensorClass::getTempAndPressure(float *temperature, float *pressure, Te
     if(d1 == 0)
       return false;
 
-    int64_t off = c2 * (1LL<<17) + (c4 * (int64_t)dt) / (1LL<<6);
-    int64_t sens = c1 * (1LL<<16) + (c3 * (int64_t)dt) / (1LL<<7);
+    int64_t off = c2 * (1LL<<17) + (c4 * dt) / (1LL<<6);
+    int64_t sens = c1 * (1LL<<16) + (c3 * dt) / (1LL<<7);
+
+    /* Second order temperature compensation for pressure */
+    if(temp < 2000) {
+      /* Low temperature */
+      int32_t tx = temp-2000;
+      tx *= tx;
+      int32_t off2 = 61 * tx / (1<<4);
+      int32_t sens2 = 29 * tx / (1<<4);
+      if(temp < -1500) {
+        /* Very low temperature */
+        tx = temp+1500;
+        tx *= tx;
+        off2 += 17 * tx;
+        sens2 += 9 * tx;
+      }
+      off -= off2;
+      sens -= sens2;
+    }
+
     int32_t p = ((int64_t)d1 * sens/(1LL<<21) - off) / (1LL << 15);
     *pressure = (float)p / 100;
   }
