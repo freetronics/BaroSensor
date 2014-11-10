@@ -32,9 +32,14 @@ typedef enum {
   FAHRENHEIT
 } TempUnit;
 
+/* error codes */
+#define ERR_NOREPLY -1
+#define ERR_BAD_READLEN -2
+#define ERR_NEEDS_BEGIN -3
+
 class BaroSensorClass {
  public:
-  BaroSensorClass() : err(-3) { }
+  BaroSensorClass() : initialised(false), err(ERR_NEEDS_BEGIN) { }
   void begin();
 
   /* Return temperature in C or Fahrenheit */
@@ -52,9 +57,10 @@ class BaroSensorClass {
                           TempUnit tempScale = CELSIUS,
                           BaroOversampleLevel level = OSR_8192);
 
-  inline bool isOK() { return err == 0; }
-  inline byte getError() { return err; }
+  inline bool isOK() { return initialised && err == 0; }
+  inline byte getError() { return initialised ? err : ERR_NEEDS_BEGIN; }
 private:
+  bool initialised;
   int8_t err;
   uint16_t c1,c2,c3,c4,c5,c6; // Calibration constants used in producing results
 

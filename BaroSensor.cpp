@@ -58,8 +58,9 @@ void BaroSensorClass::begin()
     err = _endTransmission(false);
     if(err)
       return;
-    if(Wire.requestFrom(BARO_ADDR, 2) != 2) {
-      err = -2;
+    int req = Wire.requestFrom(BARO_ADDR, 2);
+    if(req != 2) {
+      err = ERR_BAD_READLEN;
       return;
     }
     prom[i] = ((uint16_t)Wire.read()) << 8;
@@ -74,6 +75,7 @@ void BaroSensorClass::begin()
   c4 = prom[4];
   c5 = prom[5];
   c6 = prom[6];
+  initialised = true;
 }
 
 float BaroSensorClass::getTemperature(TempUnit scale, BaroOversampleLevel level)
@@ -96,7 +98,7 @@ float BaroSensorClass::getPressure(BaroOversampleLevel level)
 
 bool BaroSensorClass::getTempAndPressure(float *temperature, float *pressure, TempUnit tempScale, BaroOversampleLevel level)
 {
-  if(err)
+  if(err || !initialised)
     return false;
 
   uint32_t d2 = takeReading(CMD_START_D2(level), level);
@@ -116,9 +118,9 @@ bool BaroSensorClass::getTempAndPressure(float *temperature, float *pressure, Te
     if(d1 == 0)
       return false;
 
-    int64_t off = c2 * (1LL<<17) + (c4 * dt) / (1LL<<6);
-    int64_t sens = c1 * (1LL<<16) + (c3 * dt) / (1LL<<7);
-    int32_t p = (d1 * sens/(1LL<<21) - off) / (1LL << 15);
+    int64_t off = c2 * (1LL<<17) + (c4 * (int64_t)dt) / (1LL<<6);
+    int64_t sens = c1 * (1LL<<16) + (c3 * (int64_t)dt) / (1LL<<7);
+    int32_t p = ((int64_t)d1 * sens/(1LL<<21) - off) / (1LL << 15);
     *pressure = (float)p / 100;
   }
   return true;
@@ -140,8 +142,11 @@ uint32_t BaroSensorClass::takeReading(uint8_t trigger_cmd, BaroOversampleLevel o
   err = _endTransmission(false);
   if(err)
     return 0;
-  if(Wire.requestFrom(BARO_ADDR, 3) != 3) {
-    err = -2;
+  int req = Wire.requestFrom(BARO_ADDR, 3);
+  if(req != 3)
+    req = Wire.requestFrom(BARO_ADDR, 3); // Sometimes first read fails...?
+  if(req != 3) {
+    err = ERR_BAD_READLEN;
     return 0;
   }
   uint32_t result = (uint32_t)Wire.read() << 16;
