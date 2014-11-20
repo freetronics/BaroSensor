@@ -104,7 +104,7 @@ bool BaroSensorClass::getTempAndPressure(float *temperature, float *pressure, Te
   uint32_t d2 = takeReading(CMD_START_D2(level), level);
   if(d2 == 0)
     return false;
-  int64_t dt = d2 - c5 * (1L<<8);
+  int32_t dt = d2 - c5 * (1L<<8);
 
   int32_t temp = 2000 + dt * c6 / (1L<<23);
 
