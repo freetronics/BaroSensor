@@ -12,12 +12,12 @@
 
 /* delay to wait for sampling to complete, on each OSR level */
 const uint8_t SamplingDelayMs[6] PROGMEM = {
-  1,
   2,
-  3,
-  5,
-  9,
-  17
+  4,
+  6,
+  10,
+  18,
+  34
 };
 
 /* module commands */
