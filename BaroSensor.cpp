@@ -185,3 +185,40 @@ uint32_t BaroSensorClass::takeReading(uint8_t trigger_cmd, BaroOversampleLevel o
   return result;
 }
 
+void BaroSensorClass::dumpDebugOutput()
+{
+  Serial.print(F("C1 = 0x"));
+  Serial.println(c1, HEX);
+  Serial.print(F("C2 = 0x"));
+  Serial.println(c2, HEX);
+  Serial.print(F("C3 = 0x"));
+  Serial.println(c3, HEX);
+  Serial.print(F("C4 = 0x"));
+  Serial.println(c4, HEX);
+  Serial.print(F("C5 = 0x"));
+  Serial.println(c5, HEX);
+  Serial.print(F("C6 = 0x"));
+  Serial.println(c6, HEX);
+  Serial.print(F("d1 first = 0x"));
+  Serial.println(takeReading(CMD_START_D1(OSR_8192), OSR_8192));
+  Serial.print(F("d2 first = 0x"));
+  Serial.println(takeReading(CMD_START_D2(OSR_8192), OSR_8192));
+  Serial.print(F("d1 second = 0x"));
+  Serial.println(takeReading(CMD_START_D1(OSR_8192), OSR_8192));
+  Serial.print(F("d2 second = 0x"));
+  Serial.println(takeReading(CMD_START_D2(OSR_8192), OSR_8192));
+  Serial.print(F("d1 third = 0x"));
+  Serial.println(takeReading(CMD_START_D1(OSR_8192), OSR_8192));
+  Serial.print(F("d2 third = 0x"));
+  Serial.println(takeReading(CMD_START_D2(OSR_8192), OSR_8192));
+  float temp, pressure;
+  bool res = getTempAndPressure(&temp, &pressure);
+  Serial.print(F("result (fourth) = "));
+  Serial.println(res ? F("OK") : F("ERR"));
+  Serial.print(F("Temp (fourth) = "));
+  Serial.println(temp);
+  Serial.print(F("Pressure (fourth) = "));
+  Serial.println(pressure);
+  Serial.print(F("Error (fourth) = "));
+  Serial.println(err);
+}

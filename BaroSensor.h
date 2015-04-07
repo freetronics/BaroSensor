@@ -59,6 +59,9 @@ class BaroSensorClass {
 
   inline bool isOK() { return initialised && err == 0; }
   inline byte getError() { return initialised ? err : ERR_NEEDS_BEGIN; }
+
+  /* Debugging function that outputs a list of debugging data to Serial */
+  void dumpDebugOutput();
 private:
   bool initialised;
   int8_t err;
